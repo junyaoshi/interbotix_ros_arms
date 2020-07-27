@@ -9,6 +9,7 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  trajectory_msgs
   interbotix_moveit
   message_generation
   moveit_commander
@@ -27,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
+  GetTrajectory.srv
   MoveItPlan.srv
 )
 
@@ -34,6 +36,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   geometry_msgs
+  trajectory_msgs
   std_msgs  # Or other packages containing msgs
 )
 
@@ -74,5 +77,8 @@ add_dependencies(moveit_interface_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${cat
 catkin_install_python(PROGRAMS
   scripts/moveit_interface_gui
   scripts/moveit_python_interface
+  get_trajectory_server.py
+  get_trajectory_client.py
+  moveit_python_interface.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
