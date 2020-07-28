@@ -146,13 +146,18 @@ class MoveGroupPythonInteface(object):
     current_joints = self.group.get_current_joint_values()
     return all_close(joint_goal, current_joints, 0.01)
 
-  def plan_ee_pose(self, pose_goal, execute_plan=False):
+  def plan_ee_pose(self, pose_goal, start_joint_values, execute_plan=False):
     group = self.group
 
     ## Planning to a Pose Goal
     ## ^^^^^^^^^^^^^^^^^^^^^^^
     ## We can plan a motion for this group to a desired pose for the
     ## end-effector:
+    start_state = self.robot.get_current_state()
+    start_position = list(start_state.joint_state.position)
+    start_position[:len(start_joint_values)] = start_joint_values
+    start_state.joint_state.position = tuple(start_position)
+    group.set_start_state(start_state)
     group.set_pose_target(pose_goal)
 
     ## Now, we call the planner to compute the plan and execute it.
