@@ -17,6 +17,11 @@ To run this package on the physical robot, type the line below in a terminal (as
 ```
 $ roslaunch interbotix_moveit_interface moveit_interface.launch robot_name:=vx300 use_cpp_interface:=true use_actual:=true
 ```
+For my own project, I use wx200, and a launch script that initializes the rosbridge node, and a fake robot:
+```
+$ roslaunch interbotix_moveit_interface moveit_interface_unity.launch robot_name:=wx200 use_fake:=true
+```
+
 A GUI should pop-up similar to the one below. In it, a user should specify the desired position and orientation of the end-effector (as defined by the 'ee_arm_link' w.r.t. the 'world' frame). This can be done either via the slider bars or by entering values into the text fields. Next, a user can press one of five buttons. They are:
 - **Plan Pose** - MoveIt will attempt to find a trajectory that places the end-effector at the desired position and orientation
 - **Plan Position** - MoveIt will attempt to find a trajectory that places the end-effector at the desired position, ignoring orientation
