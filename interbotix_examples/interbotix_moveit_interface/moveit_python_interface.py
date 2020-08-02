@@ -9,7 +9,7 @@ import geometry_msgs.msg
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
-## END_SUB_TUTORIAL
+
 
 def all_close(goal, actual, tolerance):
   """
@@ -19,7 +19,6 @@ def all_close(goal, actual, tolerance):
   @param: tolerance  A float
   @returns: bool
   """
-  all_equal = True
   if type(goal) is list:
     for index in range(len(goal)):
       if abs(actual[index] - goal[index]) > tolerance:
@@ -33,54 +32,43 @@ def all_close(goal, actual, tolerance):
 
   return True
 
+
 class MoveGroupPythonInteface(object):
-  """MoveGroupPythonIntefaceTutorial"""
   def __init__(self, robot_name, dof):
     super(MoveGroupPythonInteface, self).__init__()
-    ## BEGIN_SUB_TUTORIAL setup
-    ##
-    ## First initialize `moveit_commander`_ and a `rospy`_ node:
-    moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('move_group_python_interface',
-                    anonymous=True)
 
-    ## Get the name of the robot - this will be used to properly define the end-effector link when adding a box
-    # robot_name = rospy.get_param("~/wx200/moveit_python_interface/robot_name")
+    # First initialize `moveit_commander`_ and a `rospy`_ node:
+    moveit_commander.roscpp_initialize(sys.argv)
+    rospy.init_node('move_group_python_interface', anonymous=True)
+
+    # Get the name of the robot - this will be used to properly define the end-effector link when adding a box
     self.robot_name = robot_name
 
-    ## Get the dof of the robot - this will make sure that the right number of joints are controlled
-    # dof = rospy.get_param("~/wx200/moveit_python_interface/dof")
+    # Get the dof of the robot - this will make sure that the right number of joints are controlled
     self.dof = dof
 
+    group_name = "interbotix_arm"
     robot_description = "wx200/robot_description"
-    ## Instantiate a `RobotCommander`_ object. This object is the outer-level interface to
-    ## the robot:
+
+    # Instantiate a `RobotCommander`_ object. This object is the outer-level interface to the robot:
     robot = moveit_commander.RobotCommander(robot_description=robot_description, ns=self.robot_name)
 
-    ## Instantiate a `PlanningSceneInterface`_ object.  This object is an interface
-    ## to the world surrounding the robot:
+    # Instantiate a `PlanningSceneInterface`_ object.  This object is an interface to the world surrounding the robot:
     scene = moveit_commander.PlanningSceneInterface()
 
-    ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
-    ## to one group of joints.  In this case the group is the joints in the Interbotix
-    ## arm so we set ``group_name = interbotix_arm``. If you are using a different robot,
-    ## you should change this value to the name of your robot arm planning group.
-    ## This interface can be used to plan and execute motions on the Interbotix Arm:
-    group_name = "interbotix_arm"
-    group = moveit_commander.MoveGroupCommander(name=group_name, robot_description=robot_description, ns=self.robot_name)
+    # Instantiate a `MoveGroupCommander`_ object. This object is an interface to one group of joints.
+    # This interface can be used to plan and execute motions on the Interbotix Arm:
+    group = moveit_commander.MoveGroupCommander(name=group_name,
+                                                robot_description=robot_description,
+                                                ns=self.robot_name)
 
-    ## We create a `DisplayTrajectory`_ publisher which is used later to publish
-    ## trajectories for RViz to visualize:
+    # We create a `DisplayTrajectory`_ publisher which is used later to publish trajectories for RViz to visualize:
     display_trajectory_publisher = rospy.Publisher("move_group/display_planned_path",
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
 
-    ## END_SUB_TUTORIAL
-
-    ## BEGIN_SUB_TUTORIAL basic_info
-    ##
-    ## Getting Basic Information
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^
+    # Getting Basic Information
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^
     # We can get the name of the reference frame for this robot:
     planning_frame = group.get_planning_frame()
     print "============ Reference frame: %s" % planning_frame
@@ -98,7 +86,6 @@ class MoveGroupPythonInteface(object):
     print "============ Printing robot state"
     print robot.get_current_state()
     print ""
-    ## END_SUB_TUTORIAL
 
     # Misc variables
     self.box_name = ''
@@ -110,26 +97,11 @@ class MoveGroupPythonInteface(object):
     self.eef_link = eef_link
     self.group_names = group_names
 
-  def go_to_joint_state(self):
-    # Copy class variables to local variables to make the web tutorials more clear.
-    # In practice, you should use the class variables directly unless you have a good
-    # reason not to.
+  def go_to_joint_state(self, joint_goal):
+    """
+    Planning to a Joint Goal
+    """
     group = self.group
-    dof = self.dof
-    ## BEGIN_SUB_TUTORIAL plan_to_joint_state
-    ##
-    ## Planning to a Joint Goal
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^
-
-    joint_goal = group.get_current_joint_values()
-    joint_goal[0] = 0
-    joint_goal[1] = -pi/4
-    joint_goal[2] = 0
-    joint_goal[3] = -pi/2
-    if dof >= 5:
-        joint_goal[4] = 0
-    if dof >= 6:
-        joint_goal[5] = pi/3
 
     # The go command can be called with joint values, poses, or without any
     # parameters if you have already set the pose or joint target for the group
@@ -138,29 +110,26 @@ class MoveGroupPythonInteface(object):
     # Calling ``stop()`` ensures that there is no residual movement
     group.stop()
 
-    ## END_SUB_TUTORIAL
-
-    # For testing:
-    # Note that since this section of code will not be included in the tutorials
-    # we use the class variable rather than the copied state variable
-    current_joints = self.group.get_current_joint_values()
-    return all_close(joint_goal, current_joints, 0.01)
-
   def plan_ee_pose(self, pose_goal, start_joint_values, execute_plan=False):
+    """
+    Planning to a Pose Goal
+    :return:
+      trajectory_exists: whether trajectory to reach pose goal exists
+      plan: the generated trajectory plan, trajectory points will be an empty list if trajectory_exists=False
+    """
     group = self.group
 
-    ## Planning to a Pose Goal
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    start_state = self.robot.get_current_state()
-    start_position = list(start_state.joint_state.position)
-    start_position[:len(start_joint_values)] = start_joint_values
-    start_state.joint_state.position = tuple(start_position)
-    group.set_start_state(start_state)
+    # set the initial state of robot in the generated trajectory plan
+    if start_joint_values is not None:
+      start_state = self.robot.get_current_state()
+      start_position = list(start_state.joint_state.position)
+      start_position[:len(start_joint_values)] = start_joint_values
+      start_state.joint_state.position = tuple(start_position)
+      group.set_start_state(start_state)
+
     group.set_pose_target(pose_goal)
 
-    ## Now, we call the planner to compute the plan and execute it.
+    # Now, we call the planner to compute the plan and execute it.
     plan = group.plan()
     trajectory_exists = not not plan.joint_trajectory.points
     if execute_plan:
