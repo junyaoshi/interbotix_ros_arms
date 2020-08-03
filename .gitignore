@@ -1,2 +1,3 @@
 *.pyc
 interbotix_examples/interbotix_moveit_interface/furniture
+interbotix_examples/interbotix_moveit_interface/.idea
