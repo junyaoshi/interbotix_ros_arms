@@ -56,6 +56,14 @@ class MoveGroupPythonInteface(object):
     # Instantiate a `PlanningSceneInterface`_ object.  This object is an interface to the world surrounding the robot:
     scene = moveit_commander.PlanningSceneInterface()
 
+    # fix the incorrect publisher topic names in moveit_commander.PlanningSceneInterface
+    scene._pub_co = rospy.Publisher('/' + robot_name + '/collision_object',
+                                    moveit_msgs.msg.CollisionObject,
+                                    queue_size=100)
+    scene._pub_aco = rospy.Publisher('/' + robot_name + '/attached_collision_object',
+                                     moveit_msgs.msg.AttachedCollisionObject,
+                                     queue_size=100)
+
     # Instantiate a `MoveGroupCommander`_ object. This object is an interface to one group of joints.
     # This interface can be used to plan and execute motions on the Interbotix Arm:
     group = moveit_commander.MoveGroupCommander(name=group_name,
@@ -267,6 +275,40 @@ class MoveGroupPythonInteface(object):
     return False
     ## END_SUB_TUTORIAL
 
+  def add_mesh(self, name, pose, filename, size=(1, 1, 1), timeout=0.5):
+
+    # ensure the scene interface is connected to the move group
+    rospy.sleep(0.05)
+
+    # convert pose to pose stamped
+    pose_stamped = geometry_msgs.msg.PoseStamped()
+    pose_stamped.pose = pose
+    pose_stamped.header.frame_id = self.planning_frame
+
+    self.scene.add_mesh(name, pose_stamped, filename, size)
+
+    # wait until the object info is published
+    start = rospy.get_time()
+    seconds = rospy.get_time()
+    is_known = False
+    while (seconds - start < timeout) and not rospy.is_shutdown():
+
+      # Test if the box is in the scene.
+      is_known = name in self.scene.get_known_object_names()
+
+      # Test if we are in the expected state
+      if is_known:
+        break
+
+      # Sleep so that we give other threads time on the processor
+      rospy.sleep(0.1)
+      seconds = rospy.get_time()
+    if not is_known:
+      print("Failed to load object: {} within {} seconds".format(name, timeout))
+
+  def remove_mesh(self, name):
+    self.scene.remove_world_object(name)
+
   def add_box(self, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
@@ -291,7 +333,6 @@ class MoveGroupPythonInteface(object):
     # variables directly unless you have a good reason not to.
     self.box_name=box_name
     return self.wait_for_state_update(box_is_known=True, timeout=timeout)
-
 
   def attach_box(self, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -360,3 +401,39 @@ class MoveGroupPythonInteface(object):
     # We wait for the planning scene to update.
     return self.wait_for_state_update(box_is_attached=False, box_is_known=False, timeout=timeout)
 
+def main():
+  try:
+    print "============ Press `Enter` to begin the tutorial by setting up the moveit_commander (press ctrl-d to exit) ..."
+    raw_input()
+    tutorial = MoveGroupPythonInteface(robot_name="wx200", dof=5)
+
+    print "============ Press `Enter` to add a box to the planning scene ..."
+    raw_input()
+    tutorial.add_box()
+
+    print "============ Press `Enter` to attach a Box to the Interbotix robot ..."
+    raw_input()
+    tutorial.attach_box()
+
+    print "============ Press `Enter` to plan and execute a path with an attached collision object ..."
+    raw_input()
+    cartesian_plan, fraction = tutorial.plan_cartesian_path(scale=-1)
+    tutorial.execute_plan(cartesian_plan)
+
+    print "============ Press `Enter` to detach the box from the Interbotix robot ..."
+    raw_input()
+    tutorial.detach_box()
+
+    print "============ Press `Enter` to remove the box from the planning scene ..."
+    raw_input()
+    tutorial.remove_box()
+
+    print "============ Python tutorial demo complete!"
+  except rospy.ROSInterruptException:
+    return
+  except KeyboardInterrupt:
+    return
+
+
+if __name__ == '__main__':
+  main()
