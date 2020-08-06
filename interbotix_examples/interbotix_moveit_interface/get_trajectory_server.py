@@ -25,6 +25,8 @@ def generate_trajectory(req):
     :param req: service request message
     :return: service response message
     """
+    start = rospy.get_time()
+
     print("Generating joint trajectory for the following request... \n"
           "Position: [{} {} {}]\n "
           "Start joint values: {}\n"
@@ -43,34 +45,39 @@ def generate_trajectory(req):
         object_pose = req.object_poses[i]
         try:
             object_filename = MESH_OBJECT_FILENAMES[object_name]
-            if object_name in objects_in_scene:
-                interface.remove_mesh(object_name)
+            if object_name in interface.scene.get_known_object_names():
+                interface.move_mesh(object_name, object_pose)
             else:
-                objects_in_scene.append(object_name)
-            interface.add_mesh(object_name, object_pose, object_filename)
+                interface.add_mesh(object_name, object_pose, object_filename)
         except KeyError:
             print("Unrecognized object name: {}".format(object_name))
 
     # remove objects no longer in scene
-    objects_no_longer_in_scene = list(set(objects_in_scene) - set(req.object_names))
+    objects_no_longer_in_scene = list(set(interface.scene.get_known_object_names()) - set(req.object_names))
     for object in objects_no_longer_in_scene:
         interface.remove_mesh(object)
-        objects_in_scene.remove(object)
 
     if GO_TO_START_JOINT_VALUES:
         interface.go_to_joint_state(req.start_joint_values)
 
     trajectory_exists, plan = interface.plan_ee_pose(pose_goal, req.start_joint_values, execute_plan=EXECUTE_PLAN)
 
+    end = rospy.get_time()
+
     print("Trajectory exists?: {} ".format(trajectory_exists))
     print("Trajectory sent to client!")
-    print("Objects in scene after trajectory update: {}".format(objects_in_scene))
+    print("Objects in scene after trajectory update: {}".format(interface.scene.get_known_object_names()))
+    print("Processed request in {} seconds".format(end - start))
     return GetTrajectoryResponse(plan.joint_trajectory, trajectory_exists)
 
 
 if __name__ == "__main__":
     interface = MoveGroupPythonInteface(robot_name=ROBOT_NAME, dof=DOF)
-    objects_in_scene = []
+
+    # remove objects in moveit scene because of previous runs
+    for name in interface.scene.get_known_object_names():
+        interface.scene.remove_world_object(name)
+
     s = rospy.Service('get_trajectory', GetTrajectory, generate_trajectory)
     print("Ready to generate trajectory.")
     rospy.spin()
