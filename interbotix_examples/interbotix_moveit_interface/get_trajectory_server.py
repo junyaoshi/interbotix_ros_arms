@@ -27,17 +27,21 @@ def generate_trajectory(req):
     """
     start = rospy.get_time()
 
+    target_pose = req.target_pose
+
     print("Generating joint trajectory for the following request... \n"
           "Position: [{} {} {}]\n "
+          "Orientation: [{} {} {}\n]"
           "Start joint values: {}\n"
-          "Object names: {}".format(req.x, req.y, req.z, req.start_joint_values, req.object_names))
-
-    # initialize pose goal
-    pose_goal = Pose()
-    pose_goal.orientation.w = 1.0  # we need to set a default orientation: (0, 0, 0, 1) in quaternion
-    pose_goal.position.x = req.x
-    pose_goal.position.y = req.y
-    pose_goal.position.z = req.z
+          "Object names: {}".format(target_pose.position.x,
+                                    target_pose.position.y,
+                                    target_pose.position.z,
+                                    target_pose.orientation.x,
+                                    target_pose.orientation.y,
+                                    target_pose.orientation.z,
+                                    target_pose.orientation.w,
+                                    req.start_joint_values,
+                                    req.object_names))
 
     # add mesh object to scene
     for i in range(len(req.object_names)):
@@ -60,7 +64,7 @@ def generate_trajectory(req):
     if GO_TO_START_JOINT_VALUES:
         interface.go_to_joint_state(req.start_joint_values)
 
-    trajectory_exists, plan = interface.plan_ee_pose(pose_goal, req.start_joint_values, execute_plan=EXECUTE_PLAN)
+    trajectory_exists, plan = interface.plan_ee_pose(target_pose, req.start_joint_values, execute_plan=EXECUTE_PLAN)
 
     end = rospy.get_time()
 

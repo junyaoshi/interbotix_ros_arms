@@ -130,9 +130,9 @@ class MoveGroupPythonInteface(object):
         # Calling ``stop()`` ensures that there is no residual movement
         group.stop()
 
-    def plan_ee_pose(self, pose_goal, start_joint_values, execute_plan=False):
+    def plan_ee_pose(self, target_pose, start_joint_values, execute_plan=False):
         """
-        Planning to a Pose Goal
+        Planning to a Target Pose
         :return:
           trajectory_exists: whether trajectory to reach pose goal exists
           plan: the generated trajectory plan, trajectory points will be an empty list if trajectory_exists=False
@@ -148,7 +148,7 @@ class MoveGroupPythonInteface(object):
             start_state.joint_state.position = tuple(start_position)
             group.set_start_state(start_state)
 
-        group.set_pose_target(pose_goal)
+        group.set_pose_target(target_pose)
 
         # Now, we call the planner to compute the plan and execute it.
         plan = group.plan()
