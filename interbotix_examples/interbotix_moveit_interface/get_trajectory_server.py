@@ -27,21 +27,10 @@ def generate_trajectory(req):
     """
     start = rospy.get_time()
 
-    target_pose = req.target_pose
-
     print("Generating joint trajectory for the following request... \n"
-          "Position: [{} {} {}]\n "
-          "Orientation: [{} {} {}\n]"
-          "Start joint values: {}\n"
-          "Object names: {}".format(target_pose.position.x,
-                                    target_pose.position.y,
-                                    target_pose.position.z,
-                                    target_pose.orientation.x,
-                                    target_pose.orientation.y,
-                                    target_pose.orientation.z,
-                                    target_pose.orientation.w,
-                                    req.start_joint_values,
-                                    req.object_names))
+          "--- Position: [{} {} {}]\n"
+          "--- Start joint values: {}\n"
+          "--- Object names: {}".format(req.x, req.y, req.z, req.start_joint_values, req.object_names))
 
     # add mesh object to scene
     for i in range(len(req.object_names)):
@@ -64,7 +53,10 @@ def generate_trajectory(req):
     if GO_TO_START_JOINT_VALUES:
         interface.go_to_joint_state(req.start_joint_values)
 
-    trajectory_exists, plan = interface.plan_ee_pose(target_pose, req.start_joint_values, execute_plan=EXECUTE_PLAN)
+    target_position = [req.x, req.y, req.z]
+    trajectory_exists, plan = interface.plan_ee_position(target_position,
+                                                         req.start_joint_values,
+                                                         execute_plan=EXECUTE_PLAN)
 
     end = rospy.get_time()
 

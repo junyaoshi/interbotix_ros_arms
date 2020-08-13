@@ -130,9 +130,53 @@ class MoveGroupPythonInteface(object):
         # Calling ``stop()`` ensures that there is no residual movement
         group.stop()
 
+    def plan_ee_position(self, target_position, start_joint_values, execute_plan=False):
+        """
+        Planning to a Target Position
+        :param target_position: [x, y, z]
+        :param start_joint_values: n-element list, where n is the number of joints
+        :param execute_plan: whether to execute the plan in Rviz after planning
+        :return:
+          trajectory_exists: whether trajectory to reach pose goal exists
+          plan: the generated trajectory plan, trajectory points will be an empty list if trajectory_exists=False
+        """
+        start = rospy.get_time()
+        group = self.group
+
+        # set the initial state of robot in the generated trajectory plan
+        if start_joint_values is not None:
+            start_state = self.robot.get_current_state()
+            start_position = list(start_state.joint_state.position)
+            start_position[:len(start_joint_values)] = start_joint_values
+            start_state.joint_state.position = tuple(start_position)
+            group.set_start_state(start_state)
+
+        group.set_position_target(target_position)
+
+        # Now, we call the planner to compute the plan and execute it.
+        plan = group.plan()
+        trajectory_exists = not not plan.joint_trajectory.points
+        if execute_plan:
+            group.execute(plan, wait=True)
+
+        # Calling `stop()` ensures that there is no residual movement
+        group.stop()
+
+        # It is always good to clear your targets after planning with poses.
+        # Note: there is no equivalent function for clear_joint_value_targets()
+        group.clear_pose_targets()
+
+        end = rospy.get_time()
+        print("Calculated trajectory in {} seconds".format(end - start))
+
+        return trajectory_exists, plan
+
     def plan_ee_pose(self, target_pose, start_joint_values, execute_plan=False):
         """
         Planning to a Target Pose
+        :param target_pose: a geometry_msgs.msg.Pose object
+        :param start_joint_values: n-element list, where n is the number of joints
+        :param execute_plan: whether to execute the plan in Rviz after planning
         :return:
           trajectory_exists: whether trajectory to reach pose goal exists
           plan: the generated trajectory plan, trajectory points will be an empty list if trajectory_exists=False
