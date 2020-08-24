@@ -14,9 +14,14 @@ ROBOT_NAME = 'wx200'                       # name of the robot
 DOF = 5                                    # robot's degrees of freedom
 
 # mesh object path dictionary
-MESH_OBJECT_FILENAMES = {"left_leg": "furniture/env/models/assets/objects/chair_bernhard_0146/left_leg.stl",
-                         "right_leg": "furniture/env/models/assets/objects/chair_bernhard_0146/right_leg.stl",
-                         "seat": "furniture/env/models/assets/objects/chair_bernhard_0146/seat.stl"}
+MESH_OBJECT_FILENAMES = {"chair_bernhard_0146/left_leg": "furniture/env/models/assets/objects/chair_bernhard_0146/left_leg.stl",
+                         "chair_bernhard_0146/right_leg": "furniture/env/models/assets/objects/chair_bernhard_0146/right_leg.stl",
+                         "chair_bernhard_0146/seat": "furniture/env/models/assets/objects/chair_bernhard_0146/seat.stl",
+                         "table_klubbo_0743/leg1": "furniture/env/models/assets/objects/table_klubbo_0743/leg1.stl",
+                         "table_klubbo_0743/leg2": "furniture/env/models/assets/objects/table_klubbo_0743/leg2.stl",
+                         "table_klubbo_0743/leg3": "furniture/env/models/assets/objects/table_klubbo_0743/leg3.stl",
+                         "table_klubbo_0743/leg4": "furniture/env/models/assets/objects/table_klubbo_0743/leg4.stl",
+                         "table_klubbo_0743/table_top": "furniture/env/models/assets/objects/table_klubbo_0743/table_top.stl"}
 
 
 def generate_trajectory(req):
@@ -36,12 +41,14 @@ def generate_trajectory(req):
     for i in range(len(req.object_names)):
         object_name = req.object_names[i]
         object_pose = req.object_poses[i]
+        object_size_vector3 = req.object_sizes[i]
+        object_size = (object_size_vector3.x, object_size_vector3.y, object_size_vector3.z)
         try:
             object_filename = MESH_OBJECT_FILENAMES[object_name]
             if object_name in interface.scene.get_known_object_names():
                 interface.move_mesh(object_name, object_pose)
             else:
-                interface.add_mesh(object_name, object_pose, object_filename)
+                interface.add_mesh(object_name, object_pose, object_filename, object_size)
         except KeyError:
             print("Unrecognized object name: {}".format(object_name))
 

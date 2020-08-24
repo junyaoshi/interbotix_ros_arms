@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import rospy
 from interbotix_moveit_interface.srv import GetTrajectory
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Vector3
 
 
 if __name__ == "__main__":
@@ -16,8 +16,11 @@ if __name__ == "__main__":
     object_pose.position.y = 0.5
     object_pose.position.z = 0
     object_pose.orientation.w = 1
-    object_names = ["seat"]
+    object_names = ["table_klubbo_0743/leg1"]
     object_poses= [object_pose]
+
+    object_size = Vector3(0.00015, 0.00015, 0.00015)
+    object_sizes = [object_size]
 
     print("Requesting trajectory...\n"
            "--- Position: [{} {} {}]\n"
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     rospy.wait_for_service("get_trajectory")
     try:
         get_trajectory = rospy.ServiceProxy('get_trajectory', GetTrajectory)
-        resp = get_trajectory(x, y, z, start_joint_values, object_names, object_poses)
+        resp = get_trajectory(x, y, z, start_joint_values, object_names, object_poses, object_sizes)
 
         trajectory = [point.positions for point in resp.trajectory.points]
         print("Trajectory exists? {}".format(resp.trajectory_exists))

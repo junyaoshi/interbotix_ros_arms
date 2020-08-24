@@ -4,6 +4,7 @@ float64 z
 float64[] start_joint_values
 string[] object_names
 geometry_msgs/Pose[] object_poses
+geometry_msgs/Vector3[] object_sizes
 ---
 trajectory_msgs/JointTrajectory trajectory
 bool trajectory_exists
